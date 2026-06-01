@@ -1,14 +1,14 @@
 import os
 import threading
-import asyncio  # <-- IMPORTANTE: Añadimos esto para controlar el motor asíncrono
+import asyncio
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
-import google.generativeai as genai
+from google import genai  # <-- Nueva librería oficial de Google
 
-# 1. Configurar la Inteligencia Artificial (Gemini)
-genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
-model = genai.GenerativeModel('gemini-1.5-flash')
+# 1. Configurar la Inteligencia Artificial (Nueva SDK de Gemini)
+# El nuevo cliente detecta automáticamente tu variable GEMINI_API_KEY
+client = genai.Client()
 
 # 2. Leer tu base de conocimiento
 def obtener_base_conocimiento():
@@ -38,7 +38,11 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     """
     
     try:
-        response = model.generate_content(prompt)
+        # Usamos el nuevo método de generación de contenido oficial
+        response = client.models.generate_content(
+            model='gemini-1.5-flash',
+            contents=prompt,
+        )
         await update.message.reply_text(response.text)
     except Exception as e:
         print(f"Error IA: {e}")
@@ -52,11 +56,8 @@ def run_dummy_server():
     server.serve_forever()
 
 def main():
-    # --- SOLUCIÓN PARA EL ERROR EN PYTHON 3.14 ---
-    # Creamos y activamos el bucle de eventos que pide el sistema
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)
-    # ---------------------------------------------
 
     # Iniciar el servidor falso en un hilo separado
     threading.Thread(target=run_dummy_server, daemon=True).start()
@@ -72,4 +73,5 @@ def main():
     app.run_polling()
 
 if __name__ == '__main__':
+    main()
     main()
