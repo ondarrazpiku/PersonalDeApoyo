@@ -1,0 +1,69 @@
+import os
+import threading
+from http.server import SimpleHTTPRequestHandler, HTTPServer
+from telegram import Update
+from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
+import google.generativeai as genai
+
+# 1. Configurar la Inteligencia Artificial (Gemini)
+genai.configure(api_key=os.environ.get("GEMINI_API_KEY"))
+model = genai.GenerativeModel('gemini-1.5-flash')
+
+# 2. Leer tu base de conocimiento
+def obtener_base_conocimiento():
+    try:
+        with open("informacion.txt", "r", encoding="utf-8") as f:
+            return f.read()
+    except FileNotFoundError:
+        return "El archivo de información no está disponible."
+
+# 3. Funciones del Bot de Telegram
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await update.message.reply_text("¡Hola! Soy tu asistente. Pregúntame lo que quieras sobre la información que tengo guardada.")
+
+async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    pregunta = update.message.text
+    contexto = obtener_base_conocimiento()
+    
+    # Le damos la instrucción estricta a la IA
+    prompt = f"""
+    Eres un asistente inteligente y fiel. Responde a la pregunta del usuario utilizando ÚNICAMENTE la información provista en el Contexto. 
+    Si la respuesta no se encuentra en el Contexto, sé amable y di que no dispones de esa información.
+
+    Contexto:
+    {contexto}
+
+    Pregunta: {pregunta}
+    Respuesta:
+    """
+    
+    try:
+        response = model.generate_content(prompt)
+        await update.message.reply_text(response.text)
+    except Exception as e:
+        print(f"Error IA: {e}")
+        await update.message.reply_text("Lo siento, tuve un problema al procesar tu respuesta.")
+
+# 4. Truco para Render: Servidor Web Falso para pasar el Health Check
+def run_dummy_server():
+    port = int(os.environ.get("PORT", 8080))
+    server = HTTPServer(('0.0.0.0', port), SimpleHTTPRequestHandler)
+    print(f"Servidor de control escuchando en el puerto {port}")
+    server.serve_forever()
+
+def main():
+    # Iniciar el servidor falso en un hilo separado
+    threading.Thread(target=run_dummy_server, daemon=True).start()
+
+    # Iniciar el Bot de Telegram
+    token = os.environ.get("TELEGRAM_TOKEN")
+    app = Application.builder().token(token).build()
+    
+    app.add_handler(CommandHandler("start", start))
+    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, responder))
+    
+    print("Bot de Telegram iniciado...")
+    app.run_polling()
+
+if __name__ == '__main__':
+    main()
