@@ -1,5 +1,6 @@
 import os
 import threading
+import asyncio  # <-- IMPORTANTE: Añadimos esto para controlar el motor asíncrono
 from http.server import SimpleHTTPRequestHandler, HTTPServer
 from telegram import Update
 from telegram.ext import Application, CommandHandler, MessageHandler, filters, ContextTypes
@@ -25,7 +26,6 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
     pregunta = update.message.text
     contexto = obtener_base_conocimiento()
     
-    # Le damos la instrucción estricta a la IA
     prompt = f"""
     Eres un asistente inteligente y fiel. Responde a la pregunta del usuario utilizando ÚNICAMENTE la información provista en el Contexto. 
     Si la respuesta no se encuentra en el Contexto, sé amable y di que no dispones de esa información.
@@ -52,6 +52,12 @@ def run_dummy_server():
     server.serve_forever()
 
 def main():
+    # --- SOLUCIÓN PARA EL ERROR EN PYTHON 3.14 ---
+    # Creamos y activamos el bucle de eventos que pide el sistema
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    # ---------------------------------------------
+
     # Iniciar el servidor falso en un hilo separado
     threading.Thread(target=run_dummy_server, daemon=True).start()
 
