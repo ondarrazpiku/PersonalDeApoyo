@@ -8,7 +8,7 @@ from google import genai  # <-- Nueva librería oficial de Google
 
 # 1. Configurar la Inteligencia Artificial (Nueva SDK de Gemini)
 # El nuevo cliente detecta automáticamente tu variable GEMINI_API_KEY
-client = genai.Client()
+client = genai.Client(api_key=os.environ.get("GEMINI_API_KEY"))
 
 # 2. Leer tu base de conocimiento
 def obtener_base_conocimiento():
