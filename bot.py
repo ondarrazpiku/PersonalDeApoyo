@@ -45,7 +45,7 @@ async def responder(update: Update, context: ContextTypes.DEFAULT_TYPE):
         )
         await update.message.reply_text(response.text)
     except Exception as e:
-        print(f"Error IA: {e}")
+        print(f"❌ ERROR: {type(e).__name__}: {e}")  # ← añade esta línea
         await update.message.reply_text("Lo siento, tuve un problema al procesar tu respuesta.")
 
 # 4. Truco para Render: Servidor Web Falso para pasar el Health Check
